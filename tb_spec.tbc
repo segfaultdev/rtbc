@@ -1,0 +1,27 @@
+// Ensures it's only included once (this is a source file, but just for completeness' sake).
+once tb_spec_tbc;
+
+include "header.tbh";
+macro TB_INCLUDE = 1;
+
+// At least three types; u8, ulong and long; plus any other unsigned type, if supported (u16, u32, etc.).
+// long and ulong are the largest types available, every other type should fit within (including pointers).
+
+// Function pointer types can be formed with parentheses: "long(long, u8 **) func_ptr = main;"
+
+// "const" does exist, but can only be at the start of a type, and refers to the direct type (eg. you can
+// do "const long *foo; *foo = 7;" but not "const long *foo; foo = 7;" nor "(const long) *foo; *foo = 7;").
+
+// 0 is the standard success code, while -1 or other negative values are reserved for error codes. All
+// functions must return a value.
+
+// All local variable declarations must be done at the beginning of the function, and assigned values must
+// either be globals, arguments or precomputable constants, but no non-constant expressions.
+
+long main(long argc, u8 **argv) {
+  while (argc) {
+    argc = argc - 1;
+  }
+  
+  return 0;
+}
