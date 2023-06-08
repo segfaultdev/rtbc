@@ -25,9 +25,9 @@ macro TB_INCLUDE = 1;
 // For loops just straight out don't exist.
 
 // Addition, subtraction, and-ing, or-ing and xor-ing must be supported by all architectures, alongside the
-// prefix operators <<, >>, <<< and >>>, for 1-bit shifts and rotates, respectively. Multiplication,
-// division and modulus may not be supported, in said cases, a call to __mul_TYPE1_TYPE2 or similar will be
-// performed automatically.
+// prefix operators <, >, << and >>, for 1-bit shifts and rotates, respectively. Multiplication, division
+// and modulus may not be supported, in said cases, a call to __mul_TYPE1_TYPE2 or similar will be performed
+// automatically.
 
 // Supported l-value operators are ++ and --, both prefix and postfix, and @[], though just postfix.
 
