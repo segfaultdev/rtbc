@@ -16,9 +16,42 @@ macro TB_INCLUDE = 1;
 // functions must return a value.
 
 // All local variable declarations must be done at the beginning of the function, and assigned values must
-// either be globals, arguments or precomputable constants, but no non-constant expressions.
+// be arguments or precomputable constants.
 
-long main(long argc, u8 **argv) {
+// For conditions, statements must use "if_zero", "if_not_zero", "if_sign" or "if_not_sign", as relational
+// operators like ==, <>, >, <=, < or >= are not available. This applies to while loops too (but with
+// "while_" instead of "if_").
+
+// For loops just straight out don't exist.
+
+// Addition, subtraction, and-ing, or-ing and xor-ing must be supported by all architectures, alongside the
+// prefix operators <<, >>, <<< and >>>, for 1-bit shifts and rotates, respectively. Multiplication,
+// division and modulus may not be supported, in said cases, a call to __mul_TYPE1_TYPE2 or similar will be
+// performed automatically.
+
+// Supported l-value operators are ++ and --, both prefix and postfix, and @[], though just postfix.
+
+// x[y] will return the value at address x + y, in whichever dereferencing type x has, while the l-value
+// operator x@[y] will either pre-decrement or post-increment x before returning the value at just x,
+// depending on y's sign.
+
+// Identifiers are maximum 24 characters long, and string immediates 64 characters long.
+
+ulong mem_copy(u8 *dest, (const u8) *src, ulong count) : (ulong left) {
+  if_zero (dest) return 0;
+  if_zero (src) return 0;
+  
+  left = count;
+  
+  while_not_zero (left) {
+    dest@[1] = src@[1];
+    left--;
+  }
+  
+  return count;
+}
+
+long main(long argc, u8 **argv) : (u8 foo, u8 bar, u8 tee, u8 cow[16]) {
   while (argc) {
     argc = argc - 1;
   }
