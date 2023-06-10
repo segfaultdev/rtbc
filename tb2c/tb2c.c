@@ -2,10 +2,21 @@
 
 // Types
 
+typedef struct tb_source_t tb_source_t;
 typedef struct tb_arch_t tb_arch_t;
 
 typedef struct tb_word_t tb_word_t;
 typedef struct tb_type_t tb_type_t;
+
+struct tb_source_t {
+  char **file_names;
+  int file_count;
+  
+  tb_word_t *word_stack;
+  int word_count, word_limit;
+  
+  
+};
 
 struct tb_arch_t {
   const char *name;
@@ -13,7 +24,17 @@ struct tb_arch_t {
 };
 
 struct tb_word_t {
+  int type;
+  int file, line, column;
   
+  union {
+    char name[12];
+    
+    size_t ul;
+    ssize_t l;
+    char chr;
+    int str; // Offset
+  };
 };
 
 struct tb_type_t {
@@ -28,13 +49,91 @@ struct tb_type_t {
 // Enums
 
 enum {
-  tb_type_ulong,
-  tb_type_long,
+  w_invalid,
   
-  tb_type_u8,
-  tb_type_u16,
-  tb_type_u32,
-  tb_type_u64,
+  // Literals:
+  
+  l_name,
+  l_ul,
+  l_l,
+  l_chr,
+  l_str,
+  
+  // Symbols:
+  
+  s_l_paren, // (
+  s_r_paren, // )
+  s_a_paren, // @(
+  
+  s_l_bracket, // [
+  s_r_bracket, // ]
+  s_a_bracket, // @[
+  
+  s_colon,     // :
+  s_semicolon, // ;
+  s_comma,     // ,
+  
+  s_l_shift,  // <
+  s_r_shift,  // >
+  s_l_rotate, // <<
+  s_r_rotate, // >>
+  
+  s_not, // !
+  s_and, // &
+  s_or,  // \
+  s_xor, // ^
+  
+  s_add, // +
+  s_sub, // -
+  s_mul, // *
+  s_div, // /
+  s_mod, // %
+  
+  s_inc, // ++
+  s_dec, // --
+  
+  s_assign,    // =
+  s_chr_quote, // '
+  s_str_quote, // "
+  
+  // Keywords:
+  
+  k_const,
+  k_ulong,
+  k_long,
+  k_u8,
+  k_u16,
+  k_u32,
+  k_u64,
+  
+  k_ifz,
+  k_ifnz,
+  k_ifp,
+  k_ifnp,
+  k_whz,
+  k_whnz,
+  k_whp,
+  k_whnp,
+  
+  k_else,
+  k_goto,
+  k_break,
+  k_next,
+  k_give,
+  
+  k_once,
+  k_include,
+  k_macro,
+  k_enum,
+};
+
+enum {
+  t_ul,
+  t_l,
+  t_u8,
+  t_u16,
+  t_u32,
+  t_u64,
 };
 
 // Consts
@@ -59,6 +158,13 @@ const tb_arch_t archs[] = {
     .name = "x86_64",
     .width = 8,
   },
+};
+
+const char *words[] = {
+  "ul", "l", "u8", "u16", "u32", "u64",
+  "ifz", "ifnz", "ifp", "ifnp", "whz", "whnz", "whp", "whnp",
+  "else", "goto", "break", "next", "give",
+  "once", "use", "macro", "enum",
 };
 
 const tb_type_t types[] = {

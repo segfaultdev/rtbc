@@ -1,16 +1,13 @@
 // Ensures it's only included once (this is a source file, but just for completeness' sake).
-once tb_spec_tbc;
+once tb_spec;
 
-include "header.tbh";
+use "header.tbh";
 macro TB_INCLUDE = 1;
 
-// At least three types; u8, ulong and long; plus any other unsigned type, if supported (u16, u32, etc.).
-// long and ulong are the largest types available, every other type should fit within (including pointers).
+// At least three types; u8, ul and l; plus any other unsigned type, if supported (u16, u32, etc.).
+// l and ul are the largest types available, every other type should fit within (including pointers).
 
 // Function pointer types can be formed with parentheses: "long(long, u8 **) func_ptr = main;"
-
-// "const" does exist, but can only be at the start of a type, and refers to the direct type (eg. you can
-// do "const long *foo; *foo = 7;" but not "const long *foo; foo = 7;" nor "(const long) *foo; *foo = 7;").
 
 // 0 is the standard success code, while -1 or other negative values are reserved for error codes. All
 // functions must return a value.
@@ -18,11 +15,11 @@ macro TB_INCLUDE = 1;
 // All local variable declarations must be done at the beginning of the function, and assigned values must
 // be arguments or precomputable constants.
 
-// For conditions, statements must use "if_zero", "if_not_zero", "if_sign" or "if_not_sign", as relational
-// operators like ==, <>, >, <=, < or >= are not available. This applies to while loops too (but with
-// "while_" instead of "if_").
+// For conditions, statements must use "ifz", "ifnz", "ifp" or "ifnp", as relational operators like ==, <>,
+// >, <=, < or >= are not available. This applies to while loops too (but with "wh-" instead of "if-").
+// NOTE: z stands for zero, and p for positive (0 is also counted as positive, could be called non-negative).
 
-// For loops just straight out don't exist.
+// For loops just straight out don't exist. "const" protection doesn't, either.
 
 // Addition, subtraction, and-ing, or-ing and xor-ing must be supported by all architectures, alongside the
 // prefix operators <, >, << and >>, for 1-bit shifts and rotates, respectively. Multiplication, division
@@ -35,26 +32,39 @@ macro TB_INCLUDE = 1;
 // operator x@[y] will either pre-decrement or post-increment x before returning the value at just x,
 // depending on y's sign.
 
-// Identifiers are maximum 24 characters long, and string immediates 64 characters long.
+// Identifiers are maximum 12 characters long, and string immediates 40 characters long.
 
-ulong mem_copy(u8 *dest, (const u8) *src, ulong count) : (ulong left) {
-  if_zero (dest) return 0;
-  if_zero (src) return 0;
-  
-  left = count;
-  
-  while_not_zero (left) {
-    dest@[1] = src@[1];
-    left--;
-  }
-  
-  return count;
-}
+// Labels can be defined by prefixing : to a label name, for example, ":foo goto foo;" makes an infinite
+// loop.
 
-long main(long argc, u8 **argv) : (u8 foo, u8 bar, u8 tee, u8 cow[16]) {
-  while (argc) {
-    argc = argc - 1;
-  }
-  
-  return 0;
-}
+--------------------------------
+ul mcopy(u8 *d, u8 *s, ul c)
+: (ul c2) @(
+  ifz (d) give 0;
+  ifz (s) give 0;
+  c2 = c;
+  whnz (c--) d@[1] = s@[1];
+  give c2;
+)
+
+l mcopy(u8 *d, u8 *s, ul c) @(
+  ifz (d) give -1;
+  ifz (s) give -1;
+  whnz (c--) d@[1] = s@[1];
+  give 0;
+)
+
+// Types:
+// ul, l, u8, u16, u32, u64
+
+// Keywords:
+// ifz, ifnz, ifp, ifnp, whz, whnz, whp, whnp, else,
+// break, next, give, once, use, macro, goto
+
+// Symbols: ()[]:;,<>!@%&/=^*+-"'
+// ( ) [ ] / \ @( @[ : ; , < << > >> ! & ^ % * + - ++ -- = " '
+
+// ~ -> !
+// | -> \
+// // -> #
+// { -> @(
