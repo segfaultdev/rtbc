@@ -140,7 +140,6 @@ enum {
   k_next,
   
   k_only,
-  k_once,
   k_use,
   k_macro,
   k_enum,

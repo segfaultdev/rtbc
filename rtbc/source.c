@@ -64,7 +64,6 @@ static const char *word_types[] = {
   "K_BREAK",
   "K_NEXT",
   "K_ONLY",
-  "K_ONCE",
   "K_USE",
   "K_MACRO",
   "K_ENUM",
@@ -100,7 +99,8 @@ void f_source_load(source_t *source, const char *path) {
     .column = file_column,
   };
   
-  int last_only = 0, last_use = 0;
+  int last_only = -1, last_use = -1;
+  int only_not = 0;
   
   ssize_t temp = 0; // Length for names and strings, bases for numbers, etc.
   int reuse_chr = 0, done = 0;
@@ -143,16 +143,79 @@ void f_source_load(source_t *source, const char *path) {
       
       f_debug("]\n");
       
-      // Check for "once;":
+      // Check for "only (macro), !(macro), ...;":
       
-      if (word.type == k_once && !is_once) {
-        break;
+      if (last_only >= 0) {
+        if (word.type == s_comma) {
+          only_not = 0;
+        } else if (word.type == s_semicolon) {
+          source->word_count = last_only;
+          done = 0;
+          
+          last_only = -1;
+          only_not = 0;
+        } else if (word.type == s_not && !only_not) {
+          only_not = 1;
+        } else if (word.type == l_name) {
+          int valid = 0;
+          
+          for (int i = 0; i < source->macro_count; i++) {
+            if (!strcmp(source->macros[i].name, word.name)) {
+              valid = 1;
+              break;
+            }
+          }
+          
+          if (only_not) {
+            valid = !valid;
+          }
+          
+          if (!valid) {
+            source->word_count = last_only;
+            break;
+          }
+        } else {
+          f_error("Expected identifier or valid symbol, found %s.\n", word_types[word.type]);
+        }
+      } else if (word.type == k_only) {
+        last_only = source->word_count;
       }
       
-      // Word storing section:
+      // Check for "use (path);":
       
-      source->words = realloc(source->words, (source->word_count + 1) * sizeof(word_t));
-      source->words[source->word_count++] = word;
+      if (last_use >= 0) {
+        if (word.type == l_str) {
+          source->word_count = last_use;
+          done = 0;
+          
+          char *path_copy = strdup(source->data_buffer + word.str);
+          
+          f_source_load(source, path_copy);
+          free(path_copy);
+          
+          last_use = source->word_count;
+        } else if (word.type == s_comma) {
+          // Actually, just don't do anything here :p
+        } else if (word.type == s_semicolon) {
+          source->word_count = last_only;
+          done = 0;
+          
+          last_use = -1;
+        } else {
+          f_error("Expected path or valid symbol, found %s.\n", word_types[word.type]);
+        }
+      } else if (word.type == k_use) {
+        last_use = source->word_count;
+      }
+      
+      // Word storing section (reuse done as an inner flag):
+      
+      if (done) {
+        source->words = realloc(source->words, (source->word_count + 1) * sizeof(word_t));
+        source->words[source->word_count++] = word;
+        
+        done = 0;
+      }
       
       word = (word_t){
         .type = w_invalid,
@@ -161,8 +224,6 @@ void f_source_load(source_t *source, const char *path) {
         .line = file_line,
         .column = file_column,
       };
-      
-      done = 0;
     }
     
     if (reuse_chr) {

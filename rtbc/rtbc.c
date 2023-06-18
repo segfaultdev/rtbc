@@ -11,6 +11,12 @@ int main(void) {
     .words = NULL,
     .word_index = 0,
     .word_count = 0,
+    
+    .macros = NULL,
+    .macro_count = 0,
+    
+    .data_buffer = NULL,
+    .data_length = 0,
   };
   
   f_source_load(&source, "../test.tbc");
