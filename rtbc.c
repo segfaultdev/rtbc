@@ -19,7 +19,13 @@ int main(void) {
     .data_length = 0,
   };
   
-  f_source_load(&source, "../test.tbc");
+  f_source_load(&source, "test.tbc");
+  
+  arch->f_label("MAIN");
+  arch->f_push_label("RODATA", 0);
+  arch->f_call_label("PUTS");
+  arch->f_pull(arch->point_width);
+  arch->f_exit();
   
   return 0;
 }

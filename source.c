@@ -333,8 +333,8 @@ void f_source_load(source_t *source, const char *path) {
       }
     } else if (word.type == l_name) {
       if (isalnum(chr) || chr == '_' || chr == '$') {
-        if (temp >= MAX_NAME_LENGTH) {
-          f_source_error("Identifiers can only be %d characters long, found '%c'.\n", MAX_NAME_LENGTH, chr);
+        if (temp >= MAX_LENGTH) {
+          f_source_error("Identifiers can only be %d characters long, found '%c'.\n", MAX_LENGTH, chr);
         }
         
         word.name[temp++] = toupper(chr);

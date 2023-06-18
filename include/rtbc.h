@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#define MAX_NAME_LENGTH 11
+#define MAX_LENGTH 15
 
 // log.c
 
@@ -13,6 +13,22 @@ extern int f_do_debug;
 
 void f_error(const char *format, ...);
 void f_debug(const char *format, ...);
+
+// arch.c
+
+typedef struct arch_t arch_t;
+
+struct arch_t {
+  char name[MAX_LENGTH + 1];
+  
+  int max_width;   // Largest possible value type width.
+  int point_width; // For pointers.
+  int exit_width;  // For return values (a limit, not a minimum).
+  
+  int is_big; // High if big endian, little endian otherwise.
+  
+  void (*f_label)(const char *name);
+};
 
 // parse.c
 
@@ -22,6 +38,8 @@ struct type_t {
   int base_width, base_signed;
   int point_count;
 };
+
+void f_parse_root(source_t *source);
 
 // source.c
 
@@ -44,7 +62,7 @@ struct source_t {
 };
 
 struct macro_t {
-  char name[MAX_NAME_LENGTH + 1];
+  char name[MAX_LENGTH + 1];
   
   word_t *words;
   int word_count;
@@ -55,7 +73,7 @@ struct word_t {
   int file, line, column;
   
   union {
-    char name[MAX_NAME_LENGTH + 1];
+    char name[MAX_LENGTH + 1];
     
     size_t ul;
     ssize_t l;

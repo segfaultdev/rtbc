@@ -1,5 +1,6 @@
 # Ensures it's only included once (this is a source file, but just for completeness' sake).
-once tb_spec;
+only !tb_spec;
+macro tb_spec;
 
 use "header.tbh";
 macro TB_INCLUDE = 1;
