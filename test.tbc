@@ -1,0 +1,9 @@
+# only x86_64;
+only c;
+
+once;
+
+l main() @(
+  puts("Hello, world!");
+  0@;
+)
