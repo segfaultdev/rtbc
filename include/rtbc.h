@@ -7,6 +7,18 @@
 
 #define MAX_LENGTH 15
 
+typedef struct source_t source_t;
+typedef struct macro_t macro_t;
+typedef struct word_t word_t;
+
+typedef struct context_t context_t;
+typedef struct entry_t entry_t;
+typedef struct const_t const_t;
+typedef struct enum_t enum_t;
+typedef struct type_t type_t;
+
+typedef struct arch_t arch_t;
+
 // log.c
 
 extern int f_do_debug;
@@ -14,38 +26,7 @@ extern int f_do_debug;
 void f_error(const char *format, ...);
 void f_debug(const char *format, ...);
 
-// arch.c
-
-typedef struct arch_t arch_t;
-
-struct arch_t {
-  char name[MAX_LENGTH + 1];
-  
-  int max_width;   // Largest possible value type width.
-  int point_width; // For pointers.
-  int exit_width;  // For return values (a limit, not a minimum).
-  
-  int is_big; // High if big endian, little endian otherwise.
-  
-  void (*f_label)(const char *name);
-};
-
-// parse.c
-
-typedef struct type_t type_t;
-
-struct type_t {
-  int base_width, base_signed;
-  int point_count;
-};
-
-void f_parse_root(source_t *source);
-
 // source.c
-
-typedef struct source_t source_t;
-typedef struct macro_t macro_t;
-typedef struct word_t word_t;
 
 struct source_t {
   char **files;
@@ -75,10 +56,10 @@ struct word_t {
   union {
     char name[MAX_LENGTH + 1];
     
-    size_t ul;
-    ssize_t l;
-    size_t chr;
-    int str; // Offset
+    uint64_t ux;
+    int64_t x;
+    uint64_t chr;
+    uint64_t str; // Offset (in DATA)
   };
 };
 
@@ -93,8 +74,8 @@ enum {
   // Literals:
   
   l_name,
-  l_ul,
-  l_l,
+  l_ux,
+  l_x,
   l_chr,
   l_str,
   
@@ -136,6 +117,8 @@ enum {
   
   // Keywords:
   
+  k_us,
+  k_s,
   k_ul,
   k_l,
   k_u8,
@@ -153,21 +136,99 @@ enum {
   k_whnp,
   
   k_else,
-  k_goto,
   k_break,
   k_next,
   
   k_only,
   k_use,
   k_macro,
-  k_enum,
   
   // Other:
   
   w_count,           // Word count
-  w_keywords = k_ul, // Keywords start
+  w_keywords = k_us, // Keywords start
 };
 
 void f_source_load(source_t *source, const char *path);
+
+// parse.c
+
+struct type_t {
+  int base_width, base_signed;
+  int point_count;
+};
+
+struct const_t {
+  type_t type;
+  int is_data;
+  
+  union {
+    uint64_t ux;
+    int64_t x;
+    uint64_t offset; // Offset (in DATA) -> Results in value being (DATA + offset)
+  };
+};
+
+struct entry_t {
+  char name[MAX_LENGTH + 1];
+  type_t type;
+  
+  union {
+    int is_routine;
+    int offset; // Negative offsets are locals, positive ones are arguments, 0 is our exit pointer.
+  };
+};
+
+struct context_t {
+  entry_t *globals;
+  int global_count;
+  
+  entry_t *locals;
+  int local_count;
+  
+  enum_t *enums;
+  int enum_count;
+};
+
+int  f_type_size(const arch_t *arch, type_t type);
+void f_parse_root(const arch_t *arch, source_t *source);
+
+// Architecture stuff
+
+struct arch_t {
+  char name[MAX_LENGTH + 1];
+  
+  int data_width;  // Data bus / return size (used for us and s).
+  int point_width; // Pointer size (used for ul and l).
+  
+  int is_big; // High if big endian, little endian otherwise.
+  
+  void (*f_init)(void);
+  
+  void (*f_global)(const char *name);
+  void (*f_const)(const_t value);
+  void (*f_data)(const void *data, int length);
+  
+  void (*f_init_routine)(int offset);
+  void (*f_exit_routine)(void);
+  
+  void (*f_load_const)(const_t value);
+  void (*f_load_local)(int width, int offset);
+  void (*f_push)(int width);
+  void (*f_pull)(int width);
+  void (*f_call)(int offset);
+  
+  void (*f_zero_extend)(int new_width, int old_width);
+  void (*f_sign_extend)(int new_width, int old_width);
+  
+  int  (*f_next)(void);
+  void (*f_label)(int label);
+  
+  void (*f_jump)(int label);
+  void (*f_jump_z)(int width, int label);
+  void (*f_jump_nz)(int width, int label);
+  void (*f_jump_p)(int width, int label);
+  void (*f_jump_np)(int width, int label);
+};
 
 #endif

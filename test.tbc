@@ -1,4 +1,17 @@
-l main() @(
+only !a, !b, !c;
+
+s foo = 'heyy', bar = 1000000;
+
+s mcopy(u8 *d, u8 *s, ul c) @(
+  0@;
+  
+  # ifz (d) -1@;
+  # ifz (s) -1@;
+  # whnz (c@-) d@[1] = s@[1];
+  # give 0;
+);
+
+s main() @(
   puts("Hello, world!");
   0@;
 );

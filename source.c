@@ -15,8 +15,8 @@ static const char *word_types[] = {
   "W_CHR_SLASH",
   "W_STR_SLASH",
   "L_NAME",
-  "L_UL",
-  "L_L",
+  "L_U*",
+  "L_*",
   "L_CHR",
   "L_STR",
   "S_L_PAREN",
@@ -45,6 +45,8 @@ static const char *word_types[] = {
   "S_INC",
   "S_DEC",
   "S_ASSIGN",
+  "K_US",
+  "K_S",
   "K_UL",
   "K_L",
   "K_U8",
@@ -60,13 +62,11 @@ static const char *word_types[] = {
   "K_WHP",
   "K_WHNP",
   "K_ELSE",
-  "K_GOTO",
   "K_BREAK",
   "K_NEXT",
   "K_ONLY",
   "K_USE",
   "K_MACRO",
-  "K_ENUM",
 };
 
 void f_source_load(source_t *source, const char *path) {
@@ -102,7 +102,7 @@ void f_source_load(source_t *source, const char *path) {
   int last_only = -1, last_use = -1;
   int only_not = 0;
   
-  ssize_t temp = 0; // Length for names and strings, bases for numbers, etc.
+  int64_t temp = 0; // Length for names and strings, bases for numbers, etc.
   int reuse_chr = 0, done = 0;
   
   const char *digits = "0123456789ABCDEF";
@@ -131,10 +131,10 @@ void f_source_load(source_t *source, const char *path) {
       
       if (word.type == l_name) {
         f_debug(": %s", word.name);
-      } else if (word.type == l_ul) {
-        f_debug(": %lu", word.ul);
-      } else if (word.type == l_l) {
-        f_debug(": %ld", word.l);
+      } else if (word.type == l_ux) {
+        f_debug(": %lu", word.ux);
+      } else if (word.type == l_x) {
+        f_debug(": %ld", word.x);
       } else if (word.type == l_chr) {
         f_debug(": '%c'", (uint8_t)(word.chr));
       } else if (word.type == l_str) {
@@ -250,11 +250,11 @@ void f_source_load(source_t *source, const char *path) {
         temp = 0;
         word.name[temp++] = toupper(chr);
       } else if (isdigit(chr)) {
-        word.type = l_l;
-        word.l = (chr - '0');
+        word.type = l_x;
+        word.x = (chr - '0');
         
         if (chr == '0') {
-          word.type = l_ul;
+          word.type = l_ux;
           temp = 8;
         } else {
           temp = 10;
@@ -342,16 +342,16 @@ void f_source_load(source_t *source, const char *path) {
         reuse_chr = 1;
         done = 1;
       }
-    } else if (word.type == l_ul || word.type == l_l) {
+    } else if (word.type == l_ux || word.type == l_x) {
       const char *ptr = strchr(digits, toupper(chr));
       
       if (ptr) {
-        word.l = word.l * temp + (ssize_t)(ptr - digits);
+        word.x = word.x * temp + (int64_t)(ptr - digits);
       } else {
-        if (!word.l && temp == 8 && toupper(chr) == 'X') {
+        if (!word.x && temp == 8 && toupper(chr) == 'X') {
           temp = 16;
         } else if (toupper(chr) == 'U') {
-          word.type = l_ul;
+          word.type = l_ux;
           done = 1;
         } else if (isalnum(chr)) {
           f_source_error("Expected base %ld digit, found '%c'.\n", temp, chr);
@@ -367,7 +367,7 @@ void f_source_load(source_t *source, const char *path) {
       } else if (chr == '\'') {
         done = 1;
       } else {
-        word.chr = (word.chr << 8) | (size_t)(chr);
+        word.chr = (word.chr << 8) | (uint64_t)(chr);
       }
     } else if (word.type == l_str) {
       if (chr == '\\') {
@@ -428,8 +428,8 @@ void f_source_load(source_t *source, const char *path) {
         const char *ptr = strchr(digits, toupper(chr));
         
         if (ptr) {
-          last_chr = last_chr * temp + (size_t)(ptr - digits);
-          word.chr = (word.chr & ~((size_t)(0xFF))) | last_chr;
+          last_chr = last_chr * temp + (uint64_t)(ptr - digits);
+          word.chr = (word.chr & ~((uint64_t)(0xFF))) | last_chr;
         } else {
           slash_done = 1;
           reuse_chr = 1;
@@ -438,7 +438,7 @@ void f_source_load(source_t *source, const char *path) {
       
       if (word.type == w_chr_slash) {
         if (!reuse_chr) {
-          word.chr = (word.chr << 8) | (size_t)(next_chr);
+          word.chr = (word.chr << 8) | (uint64_t)(next_chr);
         }
         
         if (slash_done) {
